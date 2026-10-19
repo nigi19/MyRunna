@@ -1,15 +1,16 @@
-# MyRunna — Plan (v0.1, draft for review)
+# MyRunna — Plan (v0.2)
 
 A personal, transparent, rules-based running-plan app to replace a Runna subscription.
 
-**Decisions so far (from Q&A):**
+**Decisions (from Q&A):**
 
-| Topic | Answer |
-|---|---|
-| Device | Phone only, activities recorded in Strava |
-| Goal race | Half marathon (date + fitness numbers still to fill in — they are app inputs, not code) |
-| App type | PWA |
-| Backend | Free-tier hosted |
+| Topic     | Answer                                                                                |
+| --------- | ------------------------------------------------------------------------------------- |
+| Device    | Phone only, activities recorded in Strava (**paid Strava subscription** → API usable) |
+| Goal race | Half marathon, 1 March 2027 (see §11 for your profile and plan preview)               |
+| App type  | PWA, English, km                                                                      |
+| Hosting   | Cloudflare Pages (or Vercel), Supabase free tier for data/auth                        |
+| Intensity | Pace + RPE only (no heart rate)                                                       |
 
 ---
 
@@ -19,46 +20,46 @@ Prices as of Oct 2026, personal-use scale (1 user).
 
 ### 1.1 App type
 
-| Option | Pros | Cons | Cost |
-|---|---|---|---|
-| **PWA** ✅ | One codebase; install to home screen; offline; instant updates; no store review | No Apple Watch / HealthKit; background GPS not reliable (fine — Strava records the run) | €0 |
-| Native (Expo / React Native) | HealthKit / Health Connect, WorkoutKit, notifications | Two platforms, store review, more work | Apple Developer $99/yr; Google Play $25 once |
-| Desktop web only | Simplest | "What do I run today?" belongs on the phone | €0 |
+| Option                       | Pros                                                                            | Cons                                                                                    | Cost                                         |
+| ---------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------- |
+| **PWA** ✅                   | One codebase; install to home screen; offline; instant updates; no store review | No Apple Watch / HealthKit; background GPS not reliable (fine — Strava records the run) | €0                                           |
+| Native (Expo / React Native) | HealthKit / Health Connect, WorkoutKit, notifications                           | Two platforms, store review, more work                                                  | Apple Developer $99/yr; Google Play $25 once |
+| Desktop web only             | Simplest                                                                        | "What do I run today?" belongs on the phone                                             | €0                                           |
 
 **Recommendation: PWA.** The core engine is plain TypeScript, so a native wrapper (Capacitor) can be added later if you ever want HealthKit.
 
 ### 1.2 Frontend framework
 
-| Option | Pros | Cons | Cost |
-|---|---|---|---|
-| **React + Vite + TypeScript** ✅ | Biggest ecosystem; `vite-plugin-pwa`; easy to port to React Native/Capacitor later | Slightly more boilerplate | €0 |
-| SvelteKit | Less code, fast | Smaller ecosystem | €0 |
-| Next.js | SSR, API routes | SSR is unnecessary for a single-user offline-first PWA | €0 |
+| Option                           | Pros                                                                               | Cons                                                   | Cost |
+| -------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------ | ---- |
+| **React + Vite + TypeScript** ✅ | Biggest ecosystem; `vite-plugin-pwa`; easy to port to React Native/Capacitor later | Slightly more boilerplate                              | €0   |
+| SvelteKit                        | Less code, fast                                                                    | Smaller ecosystem                                      | €0   |
+| Next.js                          | SSR, API routes                                                                    | SSR is unnecessary for a single-user offline-first PWA | €0   |
 
 Supporting libs (all free): Tailwind CSS, Dexie (IndexedDB), Zod (validating config/inputs), date-fns, Vitest.
 
 ### 1.3 Backend / database / hosting
 
-| Option | Pros | Cons | Cost |
-|---|---|---|---|
-| **Supabase (free) + Cloudflare Pages or Vercel Hobby** ✅ | Postgres, auth (magic link), row-level security, Edge Functions for Strava OAuth/webhooks later | Free projects pause after ~1 week of no activity (fine with daily use; the app keeps working offline anyway) | €0 (Pro is $25/mo — not needed) |
-| Firebase Spark | Mature, real-time, offline SDK | NoSQL; Cloud Functions need the paid Blaze plan | €0 (Blaze pay-as-you-go ≈ €0 at this scale, but needs a card) |
-| Azure: Static Web Apps (Free) + Functions (consumption) + Cosmos DB free tier | Generous free tiers; doubles as hands-on practice for your AI-200 study | More setup/config; Cosmos DB modelling more work than Postgres | €0 |
-| Local-only (IndexedDB) | No account, fully private | No cross-device sync, no webhook sync | €0 |
+| Option                                                                        | Pros                                                                                            | Cons                                                                                                         | Cost                                                          |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| **Supabase (free) + Cloudflare Pages or Vercel Hobby** ✅                     | Postgres, auth (magic link), row-level security, Edge Functions for Strava OAuth/webhooks later | Free projects pause after ~1 week of no activity (fine with daily use; the app keeps working offline anyway) | €0 (Pro is $25/mo — not needed)                               |
+| Firebase Spark                                                                | Mature, real-time, offline SDK                                                                  | NoSQL; Cloud Functions need the paid Blaze plan                                                              | €0 (Blaze pay-as-you-go ≈ €0 at this scale, but needs a card) |
+| Azure: Static Web Apps (Free) + Functions (consumption) + Cosmos DB free tier | Generous free tiers; doubles as hands-on practice for your AI-200 study                         | More setup/config; Cosmos DB modelling more work than Postgres                                               | €0                                                            |
+| Local-only (IndexedDB)                                                        | No account, fully private                                                                       | No cross-device sync, no webhook sync                                                                        | €0                                                            |
 
 **Recommendation: local-first + Supabase.** All data lives in IndexedDB first (the app works offline and with no backend at all); Supabase is a sync target behind a `Repository` interface. The MVP can ship without Supabase and add it in step 7. If you'd rather practise Azure, the same interface lets us swap Supabase for Azure.
 
 ### 1.4 Getting completed runs back (phone + Strava)
 
-| Option | Access requirements | Cost | Verdict |
-|---|---|---|---|
-| **Manual logging** | none | €0 | MVP |
-| **GPX/FIT/TCX file import** (export from Strava: activity → ⋯ → Export GPX / Export Original) | none | €0 | ✅ v1.1 — parsed in the browser, laps/splits extracted |
-| **Strava API** (OAuth + webhooks) | Register an app; self-service capacity 1 → 10 athletes (enough for you). **Since June 2026 the Standard Tier needs a paid Strava subscription** | Strava sub ≈ $11.99/mo (varies by country) | Only worth it if you already pay for Strava. Read-only: Strava **cannot** push structured workouts to anything |
-| intervals.icu API | Free API key | Free (supporter optional) | ❌ for you: activities that came in from Strava are filtered out of its API due to Strava's terms. Useful only if you buy a Garmin/Coros later (it pushes workouts to them for free) |
-| Garmin Connect / Training API | Garmin Connect Developer Program — business application + approval | Free if approved | ❌ no Garmin; not realistic for a hobby app anyway |
-| Health Connect / HealthKit | Native app needed | $99/yr (Apple) | Later, only if we go native |
-| Structured workout → watch (.FIT workout export) | none | €0 | Later — only relevant if you get a watch |
+| Option                                                                                        | Access requirements                                                                                                                             | Cost                                       | Verdict                                                                                                                                                                              |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Manual logging**                                                                            | none                                                                                                                                            | €0                                         | MVP                                                                                                                                                                                  |
+| **GPX/FIT/TCX file import** (export from Strava: activity → ⋯ → Export GPX / Export Original) | none                                                                                                                                            | €0                                         | ✅ v1.1 — parsed in the browser, laps/splits extracted                                                                                                                               |
+| **Strava API** (OAuth + webhooks)                                                             | Register an app; self-service capacity 1 → 10 athletes (enough for you). **Since June 2026 the Standard Tier needs a paid Strava subscription** | Strava sub ≈ $11.99/mo (varies by country) | Only worth it if you already pay for Strava. Read-only: Strava **cannot** push structured workouts to anything                                                                       |
+| intervals.icu API                                                                             | Free API key                                                                                                                                    | Free (supporter optional)                  | ❌ for you: activities that came in from Strava are filtered out of its API due to Strava's terms. Useful only if you buy a Garmin/Coros later (it pushes workouts to them for free) |
+| Garmin Connect / Training API                                                                 | Garmin Connect Developer Program — business application + approval                                                                              | Free if approved                           | ❌ no Garmin; not realistic for a hobby app anyway                                                                                                                                   |
+| Health Connect / HealthKit                                                                    | Native app needed                                                                                                                               | $99/yr (Apple)                             | Later, only if we go native                                                                                                                                                          |
+| Structured workout → watch (.FIT workout export)                                              | none                                                                                                                                            | €0                                         | Later — only relevant if you get a watch                                                                                                                                             |
 
 There's no watch to push workouts to, so the phone shows the workout itself. A later feature can add a "workout mode" with a big rep counter, a timer and audio/vibration cues, while Strava records GPS in the background.
 
@@ -66,13 +67,13 @@ There's no watch to push workouts to, so the phone shows the workout itself. A l
 
 ### 1.5 Total cost vs Runna
 
-| | Monthly | Yearly |
-|---|---|---|
-| Runna (eurozone) | €19.99 | €119.99 |
-| Runna (US) | $19.99 | $119.99 |
-| **MyRunna, recommended setup** | **€0** | **€0** (optional custom domain ≈ €10/yr) |
-| MyRunna + Strava API auto-sync | ≈ €12 (Strava sub) | ≈ €60–80 on an annual Strava plan |
-| MyRunna as native iOS | €0 | $99 Apple fee |
+|                                | Monthly                               | Yearly                                   |
+| ------------------------------ | ------------------------------------- | ---------------------------------------- |
+| Runna (eurozone)               | €19.99                                | €119.99                                  |
+| Runna (US)                     | $19.99                                | $119.99                                  |
+| **MyRunna, recommended setup** | **€0**                                | **€0** (optional custom domain ≈ €10/yr) |
+| MyRunna + Strava API auto-sync | €0 extra (you already pay for Strava) | €0 extra                                 |
+| MyRunna as native iOS          | €0                                    | $99 Apple fee                            |
 
 ---
 
@@ -102,7 +103,8 @@ There's no watch to push workouts to, so the phone shows the workout itself. A l
 ```
 
 Key principles:
-- **Deterministic engine:** same inputs + rules → same plan. Every generated session stores a `reason` (e.g. *"Week 6 build: volume +8% (cap 10%), long run 16 km (cap 30% of 52 km)"*) so the logic stays visible.
+
+- **Deterministic engine:** same inputs + rules → same plan. Every generated session stores a `reason` (e.g. _"Week 6 build: volume +8% (cap 10%), long run 16 km (cap 30% of 52 km)"_) so the logic stays visible.
 - **History is frozen; only the future is regenerated.** Any regeneration produces a diff the user approves.
 - **Swappable pace model:** `PaceModel { fitnessFromRace(distance, time) → Fitness; zones(fitness) → PaceZones; predict(fitness, distance) → time }`.
 
@@ -111,91 +113,127 @@ Key principles:
 ## 3. Data model
 
 ```ts
-type Units = 'km' | 'mi';
+type Units = 'km' | 'mi'
 
 interface AthleteProfile {
-  id: string;
-  units: Units;
-  experience: 'beginner' | 'intermediate' | 'advanced';
-  currentWeeklyKm: number;
-  longestRecentRunKm: number;
-  daysPerWeek: 3 | 4 | 5 | 6 | 7;
-  preferredLongRunDay: Weekday;        // 0=Mon … 6=Sun
-  unavailableWeekdays: Weekday[];
+  id: string
+  units: Units
+  experience: 'beginner' | 'intermediate' | 'advanced'
+  currentWeeklyKm: number
+  longestRecentRunKm: number
+  daysPerWeek: 3 | 4 | 5 | 6 | 7
+  preferredLongRunDay: Weekday // 0=Mon … 6=Sun
+  unavailableWeekdays: Weekday[]
 }
 
-interface RaceResult {               // the fitness anchor(s)
-  id: string; date: ISODate; distanceM: number; timeS: number;
-  source: 'race' | 'estimate' | 'time-trial';
+interface RaceResult {
+  // the fitness anchor(s)
+  id: string
+  date: ISODate
+  distanceM: number
+  timeS: number
+  source: 'race' | 'estimate' | 'time-trial'
 }
 
 interface Plan {
-  id: string;
-  goal: { distanceM: number; raceDate: ISODate; targetTimeS?: number };
-  startDate: ISODate;
-  paceModelId: 'vdot' | string;
-  fitness: { vdot: number; anchorResultId: string };
-  rulesVersion: string;                // hash of planRules used
-  status: 'active' | 'archived';
-  createdAt: string;
+  id: string
+  goal: { distanceM: number; raceDate: ISODate; targetTimeS?: number }
+  startDate: ISODate
+  paceModelId: 'vdot' | string
+  fitness: { vdot: number; anchorResultId: string }
+  rulesVersion: string // hash of planRules used
+  status: 'active' | 'archived'
+  createdAt: string
 }
 
 interface PlanWeek {
-  id: string; planId: string; index: number; startDate: ISODate;
-  phase: 'base' | 'build' | 'peak' | 'taper';
-  isDownWeek: boolean;
-  targetKm: number; targetLongRunKm: number;
-  hardMinutesShare: number;            // computed, must be ≤ rules.intensity.maxHardShare
-  reason: string[];
+  id: string
+  planId: string
+  index: number
+  startDate: ISODate
+  phase: 'base' | 'build' | 'peak' | 'taper'
+  isDownWeek: boolean
+  targetKm: number
+  targetLongRunKm: number
+  hardMinutesShare: number // computed, must be ≤ rules.intensity.maxHardShare
+  reason: string[]
 }
 
-type SessionType = 'rest' | 'easy' | 'long' | 'recovery' | 'threshold'
-  | 'interval' | 'repetition' | 'racePace' | 'strides' | 'race';
+type SessionType =
+  | 'rest'
+  | 'easy'
+  | 'long'
+  | 'recovery'
+  | 'threshold'
+  | 'interval'
+  | 'repetition'
+  | 'racePace'
+  | 'strides'
+  | 'race'
 
 interface PlannedSession {
-  id: string; weekId: string; date: ISODate; type: SessionType;
-  totalKm: number; estDurationMin: number;
-  steps: WorkoutStep[];                // warm-up, reps, recoveries, cool-down
-  status: 'planned' | 'done' | 'missed' | 'skipped' | 'moved';
-  completedActivityId?: string;
-  reason: string;
+  id: string
+  weekId: string
+  date: ISODate
+  type: SessionType
+  totalKm: number
+  estDurationMin: number
+  steps: WorkoutStep[] // warm-up, reps, recoveries, cool-down
+  status: 'planned' | 'done' | 'missed' | 'skipped' | 'moved'
+  completedActivityId?: string
+  reason: string
 }
 
 interface WorkoutStep {
-  kind: 'warmup' | 'work' | 'recovery' | 'cooldown' | 'steady';
-  repeat?: number;                     // e.g. 5 × (work + recovery)
-  children?: WorkoutStep[];
-  distanceM?: number; durationS?: number;
-  paceZone: PaceZoneId;                // resolved to a pace at display time
+  kind: 'warmup' | 'work' | 'recovery' | 'cooldown' | 'steady'
+  repeat?: number // e.g. 5 × (work + recovery)
+  children?: WorkoutStep[]
+  distanceM?: number
+  durationS?: number
+  paceZone: PaceZoneId // resolved to a pace at display time
 }
 
-type PaceZoneId = 'E' | 'M' | 'T' | 'I' | 'R' | 'HMP' | 'jog';
-interface PaceZones {                // seconds per km, [fast, slow]
-  modelId: string; fitnessValue: number; validFrom: ISODate;
-  zones: Record<PaceZoneId, { minSPerKm: number; maxSPerKm: number }>;
+type PaceZoneId = 'E' | 'M' | 'T' | 'I' | 'R' | 'HMP' | 'jog'
+interface PaceZones {
+  // seconds per km, [fast, slow]
+  modelId: string
+  fitnessValue: number
+  validFrom: ISODate
+  zones: Record<PaceZoneId, { minSPerKm: number; maxSPerKm: number }>
 }
 
 interface CompletedActivity {
-  id: string; date: ISODate; source: 'manual' | 'gpx' | 'fit' | 'strava';
-  externalId?: string;
-  distanceM: number; movingTimeS: number; avgHr?: number;
-  rpe?: number;                        // 1–10, asked after the run
-  laps?: { distanceM: number; timeS: number; avgHr?: number }[];
-  notes?: string;
-  matchedSessionId?: string;
+  id: string
+  date: ISODate
+  source: 'manual' | 'gpx' | 'fit' | 'strava'
+  externalId?: string
+  distanceM: number
+  movingTimeS: number
+  avgHr?: number
+  rpe?: number // 1–10, asked after the run
+  laps?: { distanceM: number; timeS: number; avgHr?: number }[]
+  notes?: string
+  matchedSessionId?: string
 }
 
-interface ScheduleEvent {            // missed runs, holidays, light weeks
-  id: string; type: 'holiday' | 'sick' | 'lightWeek' | 'unavailableDay';
-  from: ISODate; to: ISODate; note?: string;
+interface ScheduleEvent {
+  // missed runs, holidays, light weeks
+  id: string
+  type: 'holiday' | 'sick' | 'lightWeek' | 'unavailableDay'
+  from: ISODate
+  to: ISODate
+  note?: string
 }
 
-interface Suggestion {               // nothing changes until approved
-  id: string; createdAt: string;
-  kind: 'paceUpdate' | 'reschedule' | 'volumeReduce' | 'replan';
-  summary: string; evidence: string[];
-  proposedChange: unknown;             // e.g. { vdot: 47.1 → 48.0 } or a plan diff
-  status: 'pending' | 'accepted' | 'rejected';
+interface Suggestion {
+  // nothing changes until approved
+  id: string
+  createdAt: string
+  kind: 'paceUpdate' | 'reschedule' | 'volumeReduce' | 'replan'
+  summary: string
+  evidence: string[]
+  proposedChange: unknown // e.g. { vdot: 47.1 → 48.0 } or a plan diff
+  status: 'pending' | 'accepted' | 'rejected'
 }
 ```
 
@@ -218,13 +256,13 @@ predict(dist) : solve for t where VO2(dist/t) / %max(t) = VDOT   (bisection)
 
 Zones (fractions in `planRules.paces`, so they're tweakable):
 
-| Zone | Definition |
-|---|---|
-| E (easy) | velocityAt(0.59 … 0.74) |
-| M (marathon) | predict(42 195 m) → pace |
-| HMP | predict(21 097 m) → pace |
-| T (threshold) | velocityAt(0.88) |
-| I (interval) | velocityAt(0.975) |
+| Zone           | Definition                          |
+| -------------- | ----------------------------------- |
+| E (easy)       | velocityAt(0.59 … 0.74)             |
+| M (marathon)   | predict(42 195 m) → pace            |
+| HMP            | predict(21 097 m) → pace            |
+| T (threshold)  | velocityAt(0.88)                    |
+| I (interval)   | velocityAt(0.975)                   |
 | R (repetition) | I pace − 6 s per 400 m (≈ −15 s/km) |
 
 The tests compare these numbers against Daniels' published VDOT tables, within ±2 s/km.
@@ -322,6 +360,7 @@ function generatePlan(profile, anchorRace, goal, R, paceModel, events, today):
 All of these produce **Suggestions** that you accept or reject:
 
 **Pace adjustment**
+
 - Each completed run is matched to the planned session for that day (same date ±1 day, closest distance).
 - For quality runs, compare work-lap pace with the target zone. Easy runs get a check for "ran too fast".
 - Rule (in `planRules.adapt`): if ≥ 3 of the last 4 quality sessions hit the target with RPE ≤ 6, or ran ≥ 2 % faster, suggest **VDOT +0.5…1**. If ≥ 2 of the last 3 missed the target with RPE ≥ 8, suggest **VDOT −0.5…1**, or a check-in about fatigue.
@@ -329,12 +368,14 @@ All of these produce **Suggestions** that you accept or reject:
 - Easy runs that are repeatedly too fast get a nudge only. Paces never change from this.
 
 **Missed runs** (`planRules.missed`)
+
 - Missed easy run: dropped, never made up.
 - Missed quality session: move it to the next free day if that keeps 48 h around other hard days. Otherwise drop it.
 - Missed long run: move it within the same week if possible. Otherwise skip it, and the next long run does not grow.
 - Never double up; weekly volume is never pushed above target to catch up.
 
 **Breaks / holidays / sickness**
+
 - Mark a date range. Sessions inside it become `skipped`.
 - On return: < 5 days off → continue as planned. 5–10 days → first week back at 80 % volume, quality sessions repeated. > 10 days → replan from actual volume, with a possible re-estimate of VDOT −1…2, and with a warning if the goal looks unrealistic.
 - **Light week**: you flag any week → it becomes a down week, and the down-week cycle resets from there.
@@ -347,16 +388,20 @@ All of these produce **Suggestions** that you accept or reject:
 
 ```ts
 export const planRules = {
-  progression: { maxWeeklyIncrease: 0.10 },          // +10 % per build week max
-  downWeek:    { every: { beginner: 3, intermediate: 4, advanced: 4 }, factor: 0.75 },
-  intensity:   { maxHardShare: 0.20 },               // 80/20
-  longRun:     { minKm: 6, weeklyIncreaseKm: 1.5, maxKm: { '21.1': 21, '42.2': 32 },
-                 maxShareOfWeek: { beginner: 0.40, intermediate: 0.33, advanced: 0.30 },
-                 maxDurationMin: 150 },
-  taper:       { weeks: { '21.1': 2, '42.2': 3 }, volumeFactors: { '21.1': [0.75, 0.5] } },
-  paces:       { E: [0.59, 0.74], T: 0.88, I: 0.975, RoffsetPer400S: 6 },
+  progression: { maxWeeklyIncrease: 0.1 }, // +10 % per build week max
+  downWeek: { every: { beginner: 3, intermediate: 4, advanced: 4 }, factor: 0.75 },
+  intensity: { maxHardShare: 0.2 }, // 80/20
+  longRun: {
+    minKm: 6,
+    weeklyIncreaseKm: 1.5,
+    maxKm: { '21.1': 21, '42.2': 32 },
+    maxShareOfWeek: { beginner: 0.4, intermediate: 0.33, advanced: 0.3 },
+    maxDurationMin: 150,
+  },
+  taper: { weeks: { '21.1': 2, '42.2': 3 }, volumeFactors: { '21.1': [0.75, 0.5] } },
+  paces: { E: [0.59, 0.74], T: 0.88, I: 0.975, RoffsetPer400S: 6 },
   // …
-} as const;
+} as const
 ```
 
 ---
@@ -364,6 +409,7 @@ export const planRules = {
 ## 8. Scope
 
 **MVP**
+
 1. Setup wizard: goal race, anchor race time, weekly km, longest run, days/week, long-run day, experience
 2. VDOT pace model + pace-zone screen
 3. Plan generator: phases, progression, down weeks, 80/20, day placement, reasons
@@ -373,14 +419,16 @@ export const planRules = {
 7. Local storage (IndexedDB), installable offline PWA, JSON export/import backup
 
 **v1.1 – v1.x**
-- GPX/FIT/TCX import (from a Strava export)
+
+- **Strava API sync** (you already pay for Strava): OAuth via a Cloudflare Pages Function (keeps the client secret server-side); pull new activities on app open (no webhook needed, so a paused Supabase project can't lose events)
 - Adaptation suggestions (pace updates) with approve/reject
 - Missed runs, holidays, light weeks + re-plan diff view
 - Supabase sync + login (multi-device)
 - Workout mode on the phone (step timer, audio cues)
 
 **Later / optional**
-- Strava API auto-sync (if you subscribe to Strava)
+
+- GPX/FIT/TCX file import (fallback, if Strava access ever changes)
 - Alternative pace models (e.g. McMillan-style, critical speed from multiple races)
 - Watch support: .FIT workout export / intervals.icu push (if you get a Garmin/Coros)
 - Charts: weekly volume vs plan, VDOT trend
@@ -390,23 +438,58 @@ export const planRules = {
 
 ## 9. Build order
 
-1. **Scaffold**: Vite + React + TS + Tailwind + Vitest + ESLint/Prettier; GitHub Actions CI (lint, typecheck, test). Deploy preview to Cloudflare Pages/Vercel.
-2. **Pace model**: `PaceModel` interface + `VdotPaceModel`; tests against Daniels tables.
+1. ✅ **Scaffold**: Vite + React + TS + Vitest + oxlint/Prettier (Tailwind comes with the UI in step 6); GitHub Actions CI (lint, typecheck, test). Deploy preview to Cloudflare Pages/Vercel.
+2. ✅ **Pace model**: `PaceModel` interface + `VdotPaceModel`; tests against Daniels tables.
 3. **Rules config**: `planRules.ts` + Zod schema.
 4. **Plan engine**: phases → volume curve → long runs → quality selection → workout builders → 80/20 guard → day placement → easy distribution → reasons. Golden-file tests for a few profiles (e.g. HM, 4 days, 30 km/week, 12 weeks).
 5. **Storage**: Dexie repo behind a `Repository` interface; JSON backup export/import.
 6. **UI**: setup wizard → Today screen → Plan view → Log run → Paces screen. PWA manifest + offline service worker.
-7. **Supabase**: auth (magic link), tables mirroring the data model with RLS, background sync. *(MVP complete after step 6; step 7 can come any time.)*
-8. **File import** (GPX/FIT) + activity ↔ session matching.
+7. **Supabase**: auth (magic link), tables mirroring the data model with RLS, background sync. _(MVP complete after step 6; step 7 can come any time.)_
+8. **Strava sync** (OAuth Pages Function + pull on open) + activity ↔ session matching.
 9. **Adaptation + scheduling events** with Suggestions UI and re-plan diff.
-10. **Workout mode**, then optional Strava API / watch export.
+10. **Workout mode**, then optional file import / watch export.
 
 ---
 
-## 10. Open questions
+## 10. Answered questions
 
-1. Race date, anchor race time (distance + time), current weekly km, longest recent run, days/week, long-run day, experience. These are only needed to test the engine against your real situation.
-2. Units: km (assumed) and UI language: English or Dutch?
-3. Hosting: Cloudflare Pages / Vercel + Supabase (recommended), or Azure for AI-200 practice?
-4. Do you have a heart-rate strap / do you want HR-based checks, or pace + RPE only?
-5. Do you currently pay for Strava? If you do, Strava API auto-sync becomes almost free and can move earlier.
+Race 1 March 2027 · 10K at 6:30/km · 15 km/week · longest 10 km · 3 days/week · long run Saturday · intermediate · km · English · Cloudflare/Vercel · pace only · paid Strava.
+
+---
+
+## 11. Your profile and plan preview
+
+**Fitness**: 10K in 65:00, which is **VDOT 29.3**. Predicted half marathon today: **2:23:52** (6:49/km).
+
+| Zone          | Pace /km    |
+| ------------- | ----------- |
+| Easy          | 7:27 – 8:51 |
+| Marathon      | 6:56 – 7:02 |
+| Half marathon | 6:46 – 6:52 |
+| Threshold     | 6:28 – 6:34 |
+| Interval      | 5:58 – 6:04 |
+| Repetition    | 5:43 – 5:49 |
+
+**Calendar**: plan starts Mon 26 Oct 2026, which gives 18 full weeks plus race day. Note that **1 March 2027 is a Monday**, so the Saturday before race day becomes a short shakeout run. Tell me if you meant a weekend race.
+
+**Expected shape** (what the rules should produce; the engine tests will pin it down):
+
+| Phase | Weeks | Weekly km   | Long run (Sat) | Quality                   |
+| ----- | ----- | ----------- | -------------- | ------------------------- |
+| Base  | ~6    | 15 → ~20    | 10 → 12 km     | strides + short threshold |
+| Build | ~6    | ~20 → ~27   | 12 → 15 km     | threshold / intervals     |
+| Peak  | ~4    | ~27 → ~30   | 16 → 18 km     | HM-pace tempo             |
+| Taper | 2     | 75 % → 50 % | 12 → shakeout  | short sharpening          |
+
+Down week every 4th week at ~75 %.
+
+**Week template (3 days)**: Tue = quality, Thu = easy (or easy + strides), Sat = long run, the rest are rest days.
+
+**Rule changes driven by 3 days/week** (going into `planRules`):
+
+- Long-run share of weekly volume capped **by days per week**: 3 days → 50 %, 4 → 40 %, 5 → 35 %, 6+ → 30 %. With only 3 runs, the long run is naturally a big share.
+- Volume increase per week is the larger of +10 % and +1.5 km, so a low base can still grow.
+- At most **one** quality session per week at 3 days. The 80/20 check still applies (about 20 % of weekly time at T/I/R/HMP).
+- Long run capped at 150 min. At easy pace, 18 km ≈ 2 h 25 min, which fits.
+
+Peak of ~30 km/week with an 18 km long run is plenty to finish a half strongly from a 15 km/week start. A 4th weekly run would be the biggest single improvement if you ever have time; the setup can simply be changed later.

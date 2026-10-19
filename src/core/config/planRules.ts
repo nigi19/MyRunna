@@ -55,7 +55,7 @@ export const planRules = {
     peakKm: {
       '5k': { beginner: 15, intermediate: 25, advanced: 40 },
       '10k': { beginner: 20, intermediate: 28, advanced: 45 },
-      half: { beginner: 25, intermediate: 30, advanced: 50 },
+      half: { beginner: 25, intermediate: 32, advanced: 50 },
       marathon: { beginner: 40, intermediate: 55, advanced: 75 },
     },
     maxPeakMultiplier: 2.5,
@@ -87,7 +87,7 @@ export const planRules = {
     volumeFactors: {
       '5k': [0.6],
       '10k': [0.6],
-      half: [0.7, 0.35],
+      half: [0.7, 0.3],
       marathon: [0.75, 0.6, 0.35],
     },
   },
@@ -102,7 +102,9 @@ export const planRules = {
      * Max share of weekly km. With fewer running days the long run is
      * naturally a bigger part of the week.
      */
-    maxShareByDays: { 3: 0.5, 4: 0.4, 5: 0.35, 6: 0.3, 7: 0.3 },
+    maxShareByDays: { 3: 0.55, 4: 0.4, 5: 0.35, 6: 0.3, 7: 0.3 },
+    /** Added to that share per goal: marathon long runs need a bigger slice of the week. */
+    shareBonusByGoal: { '5k': 0, '10k': 0, half: 0, marathon: 0.1 },
     maxDurationMin: 150,
     /** Outside down/taper weeks, never plan a long run shorter than your current longest. */
     neverBelowLongestRecent: true,

@@ -1,0 +1,24 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`example plan: half marathon, 3 days/week > matches the golden overview 1`] = `
+[
+  "1 base 18.2km LR10 Repetitions: 6 × 200 m @ R, 1.5 min jog | Easy 3.5 km + 6 strides | Long run 10 km",
+  "2 base 19.7km LR11 Threshold: 3 × 5 min @ T, 1 min jog | Easy 3.5 km + 6 strides | Long run 11 km",
+  "3 base 21.5km LR12 Repetitions: 8 × 200 m @ R, 1.5 min jog | Easy 4 km + 6 strides | Long run 12 km",
+  "4 base↓ 17.2km LR9 Threshold: 3 × 5 min @ T, 1 min jog | Easy 3 km + 6 strides | Long run 9 km",
+  "5 base 23.6km LR13 Repetitions: 6 × 300 m @ R, 2 min jog | Easy 5 km + 6 strides | Long run 13 km",
+  "6 base 25.1km LR14 Threshold: 4 × 5 min @ T, 1 min jog | Easy 5 km + 6 strides | Long run 14 km",
+  "7 build 26.8km LR14.5 Threshold: 3 × 8 min @ T, 2 min jog | Easy 5.5 km + 6 strides | Long run 14.5 km",
+  "8 build↓ 20.3km LR11 Intervals: 5 × 2 min @ I, 2 min jog | Easy 4 km + 6 strides | Long run 11 km",
+  "9 build 28.8km LR15.5 Threshold: 4 × 8 min @ T, 2 min jog | Easy 5 km + 6 strides | Long run 15.5 km",
+  "10 build 30.3km LR16.5 Intervals: 5 × 2 min @ I, 2 min jog | Easy 8.5 km + 6 strides | Long run 16.5 km",
+  "11 build 32.1km LR17.5 Threshold: 2 × 12 min @ T, 2 min jog | Easy 8 km + 6 strides | Long run 17.5 km",
+  "12 build↓ 23.8km LR13 Intervals: 5 × 2 min @ I, 2 min jog | Easy 5.5 km + 6 strides | Long run 13 km",
+  "13 peak 32km LR17.5 Race pace: 2 × 10 min @ HMP, 3 min jog | Easy 8.5 km + 6 strides | Long run 17.5 km",
+  "14 peak 31.8km LR17.5 Threshold: 3 × 10 min @ T, 2 min jog | Easy 6.5 km + 6 strides | Long run 17.5 km",
+  "15 peak 31.8km LR17.5 Race pace: 3 × 10 min @ HMP, 3 min jog | Easy 6.5 km + 6 strides | Long run 17.5 km",
+  "16 peak 32.1km LR17.5 Threshold: 2 × 15 min @ T, 3 min jog | Easy 7 km + 6 strides | Long run 17.5 km",
+  "17 taper 22.5km LR11.5 Race pace: 2 × 10 min @ HMP, 3 min jog | Easy 5 km | Long run 11.5 km",
+  "18 taper 9.7km LR21.1 Race pace: 10 min @ HMP | Easy 5.5 km | Half marathon race",
+]
+`;

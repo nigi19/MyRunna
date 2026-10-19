@@ -80,6 +80,7 @@ export const planRulesSchema = z
         weeklyIncreaseKm: nonNegative,
         maxKm: perGoal(positive),
         maxShareByDays: perDays(fraction),
+        shareBonusByGoal: perGoal(fraction),
         maxDurationMin: positive,
         neverBelowLongestRecent: z.boolean(),
         taperFactor: fraction,
@@ -171,6 +172,12 @@ export const planRulesSchema = z
         issue(['longRun', 'maxKm', goal], 'must be at least longRun.minKm')
       }
     }
+    for (const days of DAY_KEYS)
+      for (const goal of GOAL_DISTANCES) {
+        if (r.longRun.maxShareByDays[days] + r.longRun.shareBonusByGoal[goal] > 1) {
+          issue(['longRun', 'shareBonusByGoal', goal], `long-run share above 100 % at ${days} days/week`)
+        }
+      }
     if (r.volume.minWeeklyIncreaseKm > r.volume.maxWeeklyIncreaseKm) {
       issue(['volume'], 'minWeeklyIncreaseKm must not exceed maxWeeklyIncreaseKm')
     }

@@ -11,7 +11,8 @@
     "test": "vitest run",
     "typecheck": "tsc -b",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "plan": "tsx scripts/print-plan.ts"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -25,6 +26,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.88.0",
     "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
     "typescript": "~7.0.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.5"

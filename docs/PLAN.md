@@ -435,7 +435,7 @@ All of these produce **Suggestions** that you accept or reject:
 1. ✅ **Scaffold**: Vite + React + TS + Vitest + oxlint/Prettier (Tailwind comes with the UI in step 6); GitHub Actions CI (lint, typecheck, test). Deploy preview to Cloudflare Pages/Vercel.
 2. ✅ **Pace model**: `PaceModel` interface + `VdotPaceModel`; tests against Daniels tables.
 3. ✅ **Rules config**: `planRules.ts` (all rules, commented) + Zod schema with cross-field checks (`schema.ts`); `config/index.ts` exports the validated `rules`.
-4. **Plan engine**: phases → volume curve → long runs → quality selection → workout builders → 80/20 guard → day placement → easy distribution → reasons. Golden-file tests for a few profiles (e.g. HM, 4 days, 30 km/week, 12 weeks).
+4. ✅ **Plan engine** (`src/core/plan/`, `npm run plan` prints the example): phases → volume curve → long runs → quality selection → workout builders → 80/20 guard → day placement → easy distribution → reasons. Golden-file tests for a few profiles (e.g. HM, 4 days, 30 km/week, 12 weeks).
 5. **Storage**: Dexie repo behind a `Repository` interface; JSON backup export/import.
 6. **UI**: setup wizard → Today screen → Plan view → Log run → Paces screen. PWA manifest + offline service worker.
 7. **Supabase**: auth (magic link), tables mirroring the data model with RLS, background sync. _(MVP complete after step 6; step 7 can come any time.)_
@@ -466,22 +466,22 @@ Race Sunday 28 February 2027 · 10K at 6:30/km · 15 km/week · longest 10 km ·
 
 **Calendar**: plan starts Mon 26 Oct 2026; race week is week 18, ending with the race on **Sunday 28 Feb 2027**. The Saturday before race day is a rest day or a short shakeout.
 
-**Expected shape** (what the rules should produce; the engine tests will pin it down):
+**Generated plan**: the full plan, with every reason, is in [`example-plan.md`](example-plan.md). Summary:
 
-| Phase | Weeks | Weekly km   | Long run (Sat) | Quality                   |
-| ----- | ----- | ----------- | -------------- | ------------------------- |
-| Base  | ~6    | 15 → ~20    | 10 → 12 km     | strides + short threshold |
-| Build | ~6    | ~20 → ~27   | 12 → 15 km     | threshold / intervals     |
-| Peak  | ~4    | ~27 → ~30   | 16 → 18 km     | HM-pace tempo             |
-| Taper | 2     | 75 % → 50 % | 12 → shakeout  | short sharpening          |
+| Phase | Weeks | Weekly km  | Long run (Sat) | Quality (Tue)                                           |
+| ----- | ----- | ---------- | -------------- | ------------------------------------------------------- |
+| Base  | 1–6   | 18 → 25    | 10 → 14 km     | 200–300 m reps alternating with 3–4 × 5 min T           |
+| Build | 7–12  | 27 → 32    | 14.5 → 17.5 km | threshold 3 × 8 → 2 × 12 min, 5 × 2 min I               |
+| Peak  | 13–16 | ~32        | 17.5 km        | HMP 2–3 × 10 min alternating with T 3 × 10 → 2 × 15 min |
+| Taper | 17–18 | 22.5 → 9.7 | 11.5 km → race | HMP 2 × 10 min, then 10 min HMP                         |
 
-Down week every 4th week at ~75 %. Base starts at ~20 km rather than 15, because `volume.raiseStartToFitLongestRun` keeps your current 10 km long run within the 50 % long-run cap for 3 days/week instead of cutting it.
+Down weeks 4, 8, 12. Hard time 5–15 % of each week (80/20 cap never needed). Base starts at ~18 km rather than 15 because `volume.raiseStartToFitLongestRun` keeps your 10 km long run within the 55 % cap.
 
 **Week template (3 days)**: Tue = quality, Thu = easy (or easy + strides), Sat = long run, the rest are rest days.
 
 **Rule changes driven by 3 days/week** (going into `planRules`):
 
-- Long-run share of weekly volume capped **by days per week**: 3 days → 50 %, 4 → 40 %, 5 → 35 %, 6+ → 30 %. With only 3 runs, the long run is naturally a big share.
+- Long-run share of weekly volume capped **by days per week**: 3 days → 55 %, 4 → 40 %, 5 → 35 %, 6+ → 30 % (+10 % for marathons). With only 3 runs, the long run is naturally a big share.
 - Volume increase per week is the larger of +10 % and +1.5 km, so a low base can still grow.
 - At most **one** quality session per week at 3 days. The 80/20 check still applies (about 20 % of weekly time at T/I/R/HMP).
 - Long run capped at 150 min. At easy pace, 18 km ≈ 2 h 25 min, which fits.

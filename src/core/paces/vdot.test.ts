@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { planRules } from '../config/planRules'
+import { rules } from '../config'
 import { HALF_MARATHON_M, MARATHON_M, predictRaceTimeS, vdotFromRace, vdotPaceModel } from './vdot'
 
 const hms = (h: number, m: number, s: number) => h * 3600 + m * 60 + s
@@ -47,13 +47,13 @@ describe('VDOT training zones', () => {
   ]
 
   it.each(expected)('matches Daniels T and I pace for VDOT $vdot within 3 s/km', (row) => {
-    const z = vdotPaceModel.zones(row.vdot, planRules.paces)
+    const z = vdotPaceModel.zones(row.vdot, rules.paces)
     expect(Math.abs(centre(z.T) - row.T)).toBeLessThanOrEqual(3)
     expect(Math.abs(centre(z.I) - row.I)).toBeLessThanOrEqual(3)
   })
 
   it('orders zones from slow to fast', () => {
-    const z = vdotPaceModel.zones(45, planRules.paces)
+    const z = vdotPaceModel.zones(45, rules.paces)
     const order = [z.E.slow, z.E.fast, centre(z.M), centre(z.HMP), centre(z.T), centre(z.I), centre(z.R)]
     for (let i = 1; i < order.length; i++) expect(order[i]).toBeLessThan(order[i - 1])
   })

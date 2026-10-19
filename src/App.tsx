@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { planRules } from './core/config/planRules'
+import { rules } from './core/config'
 import { formatDuration, formatPace, parseDuration } from './core/format'
 import { HALF_MARATHON_M, MARATHON_M, vdotPaceModel } from './core/paces/vdot'
 import type { PaceZoneId } from './core/paces/types'
@@ -27,7 +27,7 @@ export default function App() {
   const result = useMemo(() => {
     try {
       const vdot = vdotPaceModel.fitnessFromRace({ distanceM, timeS: parseDuration(time) })
-      return { vdot, zones: vdotPaceModel.zones(vdot, planRules.paces) }
+      return { vdot, zones: vdotPaceModel.zones(vdot, rules.paces) }
     } catch {
       return null
     }

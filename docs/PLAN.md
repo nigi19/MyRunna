@@ -7,7 +7,7 @@ A personal, transparent, rules-based running-plan app to replace a Runna subscri
 | Topic     | Answer                                                                                |
 | --------- | ------------------------------------------------------------------------------------- |
 | Device    | Phone only, activities recorded in Strava (**paid Strava subscription** → API usable) |
-| Goal race | Half marathon, 1 March 2027 (see §11 for your profile and plan preview)               |
+| Goal race | Half marathon, Sunday 28 February 2027 (see §11)                                      |
 | App type  | PWA, English, km                                                                      |
 | Hosting   | Cloudflare Pages (or Vercel), Supabase free tier for data/auth                        |
 | Intensity | Pace + RPE only (no heart rate)                                                       |
@@ -54,8 +54,8 @@ Supporting libs (all free): Tailwind CSS, Dexie (IndexedDB), Zod (validating con
 | Option                                                                                        | Access requirements                                                                                                                             | Cost                                       | Verdict                                                                                                                                                                              |
 | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Manual logging**                                                                            | none                                                                                                                                            | €0                                         | MVP                                                                                                                                                                                  |
-| **GPX/FIT/TCX file import** (export from Strava: activity → ⋯ → Export GPX / Export Original) | none                                                                                                                                            | €0                                         | ✅ v1.1 — parsed in the browser, laps/splits extracted                                                                                                                               |
-| **Strava API** (OAuth + webhooks)                                                             | Register an app; self-service capacity 1 → 10 athletes (enough for you). **Since June 2026 the Standard Tier needs a paid Strava subscription** | Strava sub ≈ $11.99/mo (varies by country) | Only worth it if you already pay for Strava. Read-only: Strava **cannot** push structured workouts to anything                                                                       |
+| **GPX/FIT/TCX file import** (export from Strava: activity → ⋯ → Export GPX / Export Original) | none                                                                                                                                            | €0                                         | Later fallback — parsed in the browser                                                                                                                                               |
+| **Strava API** (OAuth + webhooks)                                                             | Register an app; self-service capacity 1 → 10 athletes (enough for you). **Since June 2026 the Standard Tier needs a paid Strava subscription** | Strava sub ≈ $11.99/mo (varies by country) | ✅ v1.1 — you already pay for Strava. Read-only: Strava **cannot** push structured workouts to anything                                                                              |
 | intervals.icu API                                                                             | Free API key                                                                                                                                    | Free (supporter optional)                  | ❌ for you: activities that came in from Strava are filtered out of its API due to Strava's terms. Useful only if you buy a Garmin/Coros later (it pushes workouts to them for free) |
 | Garmin Connect / Training API                                                                 | Garmin Connect Developer Program — business application + approval                                                                              | Free if approved                           | ❌ no Garmin; not realistic for a hobby app anyway                                                                                                                                   |
 | Health Connect / HealthKit                                                                    | Native app needed                                                                                                                               | $99/yr (Apple)                             | Later, only if we go native                                                                                                                                                          |
@@ -384,25 +384,19 @@ All of these produce **Suggestions** that you accept or reject:
 
 ## 7. Config file
 
-`src/core/config/planRules.ts` is a single typed object with comments on every rule, validated by Zod at startup. A read-only "Rules" screen in Settings displays it. Example excerpt:
+`src/core/config/planRules.ts` holds every tunable rule, with comments, in one plain object:
 
-```ts
-export const planRules = {
-  progression: { maxWeeklyIncrease: 0.1 }, // +10 % per build week max
-  downWeek: { every: { beginner: 3, intermediate: 4, advanced: 4 }, factor: 0.75 },
-  intensity: { maxHardShare: 0.2 }, // 80/20
-  longRun: {
-    minKm: 6,
-    weeklyIncreaseKm: 1.5,
-    maxKm: { '21.1': 21, '42.2': 32 },
-    maxShareOfWeek: { beginner: 0.4, intermediate: 0.33, advanced: 0.3 },
-    maxDurationMin: 150,
-  },
-  taper: { weeks: { '21.1': 2, '42.2': 3 }, volumeFactors: { '21.1': [0.75, 0.5] } },
-  paces: { E: [0.59, 0.74], T: 0.88, I: 0.975, RoffsetPer400S: 6 },
-  // …
-} as const
-```
+| Section                              | What it controls                                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `paces`, `goalPaceZone`              | VDOT fractions per zone; which zone "race pace" means per goal                                                                       |
+| `minWeeks`, `maxWeeks`, `phaseSplit` | Plan length limits; base/build/peak proportions                                                                                      |
+| `volume`, `downWeek`, `taper`        | Peak km per goal × experience, weekly growth (+10 % / ≥1.5 km / ≤5 km), down-week cycle, taper factors                               |
+| `longRun`                            | Growth, max km per goal, max share **by days per week**, 150 min cap                                                                 |
+| `intensity`, `quality`               | 80/20 cap, sessions per week by experience × phase (capped by days), menu per phase, strides, warm-up/cool-down, **workout ladders** |
+| `spacing`, `easy`                    | 48 h between hard days; easy-run bounds                                                                                              |
+| `adapt`, `missed`, `breaks`          | Thresholds for pace suggestions; missed-run handling; return-from-break rules                                                        |
+
+`schema.ts` validates it with Zod: types, ranges, no unknown keys (typos fail), plus cross-checks such as easy < threshold < interval, one taper factor per taper week, base + peak < 1, and min weeks > taper. `config/index.ts` exports the validated `rules`, so an invalid edit fails at startup with a list of every problem, e.g. `intensity.maxHardShare: Too big: expected number to be <=1`.
 
 ---
 
@@ -440,7 +434,7 @@ export const planRules = {
 
 1. ✅ **Scaffold**: Vite + React + TS + Vitest + oxlint/Prettier (Tailwind comes with the UI in step 6); GitHub Actions CI (lint, typecheck, test). Deploy preview to Cloudflare Pages/Vercel.
 2. ✅ **Pace model**: `PaceModel` interface + `VdotPaceModel`; tests against Daniels tables.
-3. **Rules config**: `planRules.ts` + Zod schema.
+3. ✅ **Rules config**: `planRules.ts` (all rules, commented) + Zod schema with cross-field checks (`schema.ts`); `config/index.ts` exports the validated `rules`.
 4. **Plan engine**: phases → volume curve → long runs → quality selection → workout builders → 80/20 guard → day placement → easy distribution → reasons. Golden-file tests for a few profiles (e.g. HM, 4 days, 30 km/week, 12 weeks).
 5. **Storage**: Dexie repo behind a `Repository` interface; JSON backup export/import.
 6. **UI**: setup wizard → Today screen → Plan view → Log run → Paces screen. PWA manifest + offline service worker.
@@ -453,7 +447,7 @@ export const planRules = {
 
 ## 10. Answered questions
 
-Race 1 March 2027 · 10K at 6:30/km · 15 km/week · longest 10 km · 3 days/week · long run Saturday · intermediate · km · English · Cloudflare/Vercel · pace only · paid Strava.
+Race Sunday 28 February 2027 · 10K at 6:30/km · 15 km/week · longest 10 km · 3 days/week · long run Saturday · intermediate · km · English · Cloudflare/Vercel · pace only · paid Strava.
 
 ---
 
@@ -470,7 +464,7 @@ Race 1 March 2027 · 10K at 6:30/km · 15 km/week · longest 10 km · 3 days/wee
 | Interval      | 5:58 – 6:04 |
 | Repetition    | 5:43 – 5:49 |
 
-**Calendar**: plan starts Mon 26 Oct 2026, which gives 18 full weeks plus race day. Note that **1 March 2027 is a Monday**, so the Saturday before race day becomes a short shakeout run. Tell me if you meant a weekend race.
+**Calendar**: plan starts Mon 26 Oct 2026; race week is week 18, ending with the race on **Sunday 28 Feb 2027**. The Saturday before race day is a rest day or a short shakeout.
 
 **Expected shape** (what the rules should produce; the engine tests will pin it down):
 
@@ -481,7 +475,7 @@ Race 1 March 2027 · 10K at 6:30/km · 15 km/week · longest 10 km · 3 days/wee
 | Peak  | ~4    | ~27 → ~30   | 16 → 18 km     | HM-pace tempo             |
 | Taper | 2     | 75 % → 50 % | 12 → shakeout  | short sharpening          |
 
-Down week every 4th week at ~75 %.
+Down week every 4th week at ~75 %. Base starts at ~20 km rather than 15, because `volume.raiseStartToFitLongestRun` keeps your current 10 km long run within the 50 % long-run cap for 3 days/week instead of cutting it.
 
 **Week template (3 days)**: Tue = quality, Thu = easy (or easy + strides), Sat = long run, the rest are rest days.
 

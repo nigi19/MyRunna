@@ -15,6 +15,7 @@
     "plan": "tsx scripts/print-plan.ts"
   },
   "dependencies": {
+    "dexie": "^4.4.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "zod": "^4.6.7"
@@ -24,6 +25,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "fake-indexeddb": "^6.2.6",
     "oxlint": "^1.88.0",
     "prettier": "^3.9.10",
     "tsx": "^4.23.15",

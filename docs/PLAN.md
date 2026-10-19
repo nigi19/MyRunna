@@ -436,7 +436,7 @@ All of these produce **Suggestions** that you accept or reject:
 2. ✅ **Pace model**: `PaceModel` interface + `VdotPaceModel`; tests against Daniels tables.
 3. ✅ **Rules config**: `planRules.ts` (all rules, commented) + Zod schema with cross-field checks (`schema.ts`); `config/index.ts` exports the validated `rules`.
 4. ✅ **Plan engine** (`src/core/plan/`, `npm run plan` prints the example): phases → volume curve → long runs → quality selection → workout builders → 80/20 guard → day placement → easy distribution → reasons. Golden-file tests for a few profiles (e.g. HM, 4 days, 30 km/week, 12 weeks).
-5. **Storage**: Dexie repo behind a `Repository` interface; JSON backup export/import.
+5. ✅ **Storage** (`src/data/`): `Repository` interface implemented once over a tiny `Store` (IndexedDB via Dexie, or in-memory fallback); plans (new plan = active, old one archived), runs (validated, de-duplicated by external id, linked to a session by plan + date), key/value meta; validated JSON backup export/import (all-or-nothing); persistent-storage request.
 6. **UI**: setup wizard → Today screen → Plan view → Log run → Paces screen. PWA manifest + offline service worker.
 7. **Supabase**: auth (magic link), tables mirroring the data model with RLS, background sync. _(MVP complete after step 6; step 7 can come any time.)_
 8. **Strava sync** (OAuth Pages Function + pull on open) + activity ↔ session matching.

@@ -437,7 +437,7 @@ All of these produce **Suggestions** that you accept or reject:
 3. ✅ **Rules config**: `planRules.ts` (all rules, commented) + Zod schema with cross-field checks (`schema.ts`); `config/index.ts` exports the validated `rules`.
 4. ✅ **Plan engine** (`src/core/plan/`, `npm run plan` prints the example): phases → volume curve → long runs → quality selection → workout builders → 80/20 guard → day placement → easy distribution → reasons. Golden-file tests for a few profiles (e.g. HM, 4 days, 30 km/week, 12 weeks).
 5. ✅ **Storage** (`src/data/`): `Repository` interface implemented once over a tiny `Store` (IndexedDB via Dexie, or in-memory fallback); plans (new plan = active, old one archived), runs (validated, de-duplicated by external id, linked to a session by plan + date), key/value meta; validated JSON backup export/import (all-or-nothing); persistent-storage request.
-6. **UI**: setup wizard → Today screen → Plan view → Log run → Paces screen. PWA manifest + offline service worker.
+6. ✅ **UI** (`src/ui/`): setup wizard with live preview → Today (session, structure, paces, why, week strip, done state) → Plan (weeks, session details, reasons) → Log run (auto-linked to the planned session) → Paces (+ what-if calculator) → Settings (new plan, backup export/import, rules viewer, rules-changed warning). Tailwind, light/dark, installable PWA with offline service worker. UI tests with Testing Library.
 7. **Supabase**: auth (magic link), tables mirroring the data model with RLS, background sync. _(MVP complete after step 6; step 7 can come any time.)_
 8. **Strava sync** (OAuth Pages Function + pull on open) + activity ↔ session matching.
 9. **Adaptation + scheduling events** with Suggestions UI and re-plan diff.

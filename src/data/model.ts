@@ -9,6 +9,8 @@ export interface StoredPlan {
   id: string
   /** ISO timestamp. */
   createdAt: string
+  /** ISO timestamp of the last change; missing on plans saved before sync existed. */
+  updatedAt?: string
   status: 'active' | 'archived'
   /** Fingerprint of planRules at generation time (see core/config/hash.ts). */
   rulesHash: string
@@ -80,6 +82,7 @@ const planSchema = z
 export const storedPlanSchema = z.object({
   id: z.string().min(1),
   createdAt: timestamp,
+  updatedAt: timestamp.optional(),
   status: z.enum(['active', 'archived']),
   rulesHash: z.string(),
   plan: planSchema,

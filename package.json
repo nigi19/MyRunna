@@ -15,6 +15,7 @@
     "plan": "tsx scripts/print-plan.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "@tailwindcss/vite": "^4.3.3",
     "dexie": "^4.4.6",
     "react": "^19.3.1",

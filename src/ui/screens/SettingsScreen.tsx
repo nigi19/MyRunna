@@ -3,6 +3,7 @@ import { rules } from '../../core/config'
 import { rulesHash } from '../../core/config/hash'
 import { backupFileName, backupToJson, BackupError } from '../../data'
 import { useApp } from '../appContext'
+import { SyncCard } from '../components/SyncCard'
 import { Button, Card } from '../components/ui'
 import { formatDate } from '../lib/labels'
 
@@ -65,10 +66,12 @@ export function SettingsScreen({ onNewPlan }: { onNewPlan: () => void }) {
         </Card>
       )}
 
+      <SyncCard />
+
       <Card className="space-y-3">
         <h2 className="font-semibold">Backup</h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Your data lives on this device only. {activities.length} run(s) stored.
+          A backup is a file with all your data. {activities.length} run(s) stored.
           {!persistent && ' ⚠️ Storage is temporary in this browser mode: export a backup!'}
         </p>
         <div className="flex gap-3">

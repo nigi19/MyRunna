@@ -26,4 +26,16 @@ npm run build      # production build in dist/ (with offline service worker)
 2. Build command `npm run build`, output directory `dist`.
 3. Open the URL on your phone → Share → **Add to Home Screen** (iOS) or **Install app** (Android).
 
-Data stays on the device; use Settings → Export backup regularly.
+Data lives on the device first. Sign in under Settings → Sync to back it up to Supabase and use it on
+other devices, or use Settings → Export backup.
+
+## Cloud sync (Supabase, free)
+
+The public project settings are in `.env` (safe to commit; never add the secret / service_role key).
+One-time setup in the Supabase dashboard:
+
+1. **SQL Editor** → New query → paste `supabase/migrations/001_sync.sql` → Run.
+2. **Authentication → Emails → Magic Link** template: make the body show the code, e.g.
+   `<p>Your MyRunna code: <strong>{{ .Token }}</strong></p>`
+3. **Authentication → URL Configuration**: Site URL = your Pages URL.
+4. After your first sign-in: **Authentication → Sign In / Providers** → turn off _Allow new users to sign up_.

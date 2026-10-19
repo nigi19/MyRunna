@@ -5,19 +5,34 @@ export interface MetaEntry {
   value: unknown
 }
 
+export type SyncedKind = 'plan' | 'activity'
+
+/** A local change not yet pushed to the cloud. One entry per record (key = kind:id). */
+export interface OutboxEntry {
+  key: string
+  kind: SyncedKind
+  id: string
+  /** ISO timestamp of the latest local change. */
+  changedAt: string
+  deleted: boolean
+}
+
 export interface Tables {
   plans: StoredPlan
   activities: CompletedActivity
   meta: MetaEntry
+  outbox: OutboxEntry
 }
 
 export type TableName = keyof Tables
 
-export type Snapshot = { [T in TableName]: Tables[T][] }
+/** The user's data (what a backup holds); the outbox is sync bookkeeping. */
+export type DataTable = 'plans' | 'activities' | 'meta'
+export type Snapshot = { [T in DataTable]: Tables[T][] }
 
 /**
  * Minimal storage backend. The repository holds all logic; a store only
- * reads and writes records. Keys: plans.id, activities.id, meta.key.
+ * reads and writes records. Keys: plans.id, activities.id, meta.key, outbox.key.
  */
 export interface Store {
   all<T extends TableName>(table: T): Promise<Tables[T][]>
@@ -26,12 +41,14 @@ export interface Store {
   delete(table: TableName, key: string): Promise<void>
   /** Runs `fn` atomically across all tables: all of its writes happen, or none. */
   transaction<R>(fn: () => Promise<R>): Promise<R>
-  /** Replaces every table's contents (used by backup restore). */
+  /** Replaces the data tables' contents (used by backup restore); the outbox is kept. */
   replaceAll(data: Snapshot): Promise<void>
 }
 
 export const keyOf = (table: TableName, value: Tables[TableName]): string =>
-  table === 'meta' ? (value as MetaEntry).key : (value as StoredPlan | CompletedActivity).id
+  table === 'meta' || table === 'outbox'
+    ? (value as MetaEntry | OutboxEntry).key
+    : (value as StoredPlan | CompletedActivity).id
 
 /** In-memory store: used in tests and when IndexedDB is unavailable (e.g. private browsing). */
 export class MemoryStore implements Store {
@@ -39,6 +56,7 @@ export class MemoryStore implements Store {
     plans: new Map(),
     activities: new Map(),
     meta: new Map(),
+    outbox: new Map(),
   }
 
   async all<T extends TableName>(table: T) {
@@ -73,6 +91,7 @@ export class MemoryStore implements Store {
       plans: new Map(snapshot.plans.map((p) => [p.id, structuredClone(p)])),
       activities: new Map(snapshot.activities.map((a) => [a.id, structuredClone(a)])),
       meta: new Map(snapshot.meta.map((m) => [m.key, structuredClone(m)])),
+      outbox: this.data.outbox,
     }
   }
 }

@@ -1,11 +1,12 @@
 import { Dexie, type Table } from 'dexie'
 import type { CompletedActivity, StoredPlan } from './model'
-import type { MetaEntry, Snapshot, Store, TableName, Tables } from './store'
+import type { MetaEntry, OutboxEntry, Snapshot, Store, TableName, Tables } from './store'
 
 class MyRunnaDb extends Dexie {
   plans!: Table<StoredPlan, string>
   activities!: Table<CompletedActivity, string>
   meta!: Table<MetaEntry, string>
+  outbox!: Table<OutboxEntry, string>
 
   constructor(name: string) {
     super(name)
@@ -15,6 +16,8 @@ class MyRunnaDb extends Dexie {
       activities: 'id, date, externalId',
       meta: 'key',
     })
+    // v2: outbox of local changes waiting to be synced.
+    this.version(2).stores({ outbox: 'key' })
   }
 }
 
@@ -47,7 +50,7 @@ export class DexieStore implements Store {
   }
 
   transaction<R>(fn: () => Promise<R>): Promise<R> {
-    return this.db.transaction('rw', this.db.plans, this.db.activities, this.db.meta, fn)
+    return this.db.transaction('rw', [this.db.plans, this.db.activities, this.db.meta, this.db.outbox], fn)
   }
 
   replaceAll(snapshot: Snapshot) {

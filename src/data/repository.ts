@@ -9,6 +9,7 @@ import {
   type NewActivity,
   type StoredPlan,
 } from './model'
+import { enqueue, enqueueAll, isLocalMeta } from './outbox'
 import type { Store } from './store'
 
 export class NotFoundError extends Error {}
@@ -41,6 +42,8 @@ export interface Repository {
   exportBackup(): Promise<Backup>
   /** Validates the backup first; on any problem nothing is changed. Replaces all data. */
   importBackup(input: unknown): Promise<{ plans: number; activities: number }>
+  /** Local changes not yet synced to the cloud. */
+  pendingChanges(): Promise<number>
 }
 
 export interface RepositoryOptions {
@@ -66,17 +69,23 @@ export function createRepository(store: Store, options: RepositoryOptions = {}):
 
     savePlan(plan, rules) {
       return store.transaction(async () => {
+        const timestamp = now()
         for (const p of await store.all('plans')) {
-          if (p.status === 'active') await store.put('plans', { ...p, status: 'archived' })
+          if (p.status === 'active') {
+            await store.put('plans', { ...p, status: 'archived', updatedAt: timestamp })
+            await enqueue(store, 'plan', p.id, timestamp)
+          }
         }
         const stored: StoredPlan = {
           id: newId(),
-          createdAt: now(),
+          createdAt: timestamp,
+          updatedAt: timestamp,
           status: 'active',
           rulesHash: rulesHash(rules),
           plan,
         }
         await store.put('plans', stored)
+        await enqueue(store, 'plan', stored.id, timestamp)
         return stored
       })
     },
@@ -84,13 +93,16 @@ export function createRepository(store: Store, options: RepositoryOptions = {}):
     deletePlan(id) {
       // Runs are kept; they just no longer count for a planned session.
       return store.transaction(async () => {
+        const timestamp = now()
         for (const a of await store.all('activities')) {
           if (a.plannedSession?.planId === id) {
             const { plannedSession: _, ...rest } = a
-            await store.put('activities', { ...rest, updatedAt: now() })
+            await store.put('activities', { ...rest, updatedAt: timestamp })
+            await enqueue(store, 'activity', a.id, timestamp)
           }
         }
         await store.delete('plans', id)
+        await enqueue(store, 'plan', id, timestamp, true)
       })
     },
 
@@ -121,6 +133,7 @@ export function createRepository(store: Store, options: RepositoryOptions = {}):
           updatedAt: timestamp,
         }
         await store.put('activities', activity)
+        await enqueue(store, 'activity', activity.id, timestamp)
         return activity
       })
     },
@@ -131,12 +144,16 @@ export function createRepository(store: Store, options: RepositoryOptions = {}):
         if (!current) throw new NotFoundError(`No activity ${id}`)
         const updated = activitySchema.parse({ ...current, ...patch, id, updatedAt: now() })
         await store.put('activities', updated)
+        await enqueue(store, 'activity', id, updated.updatedAt)
         return updated
       })
     },
 
-    async deleteActivity(id) {
-      await store.delete('activities', id)
+    deleteActivity(id) {
+      return store.transaction(async () => {
+        await store.delete('activities', id)
+        await enqueue(store, 'activity', id, now(), true)
+      })
     },
 
     async getMeta<T>(key: string) {
@@ -153,12 +170,46 @@ export function createRepository(store: Store, options: RepositoryOptions = {}):
         store.all('activities'),
         store.all('meta'),
       ])
-      return { app: 'myrunna', format: BACKUP_FORMAT, exportedAt: now(), plans, activities, meta }
+      return {
+        app: 'myrunna',
+        format: BACKUP_FORMAT,
+        exportedAt: now(),
+        plans,
+        activities,
+        meta: meta.filter((m) => !isLocalMeta(m.key)),
+      }
+    },
+
+    async pendingChanges() {
+      return (await store.all('outbox')).length
     },
 
     async importBackup(input) {
       const backup = parseBackup(input)
-      await store.replaceAll(backup)
+      await store.transaction(async () => {
+        // Records that disappear in the restore are deleted in the cloud too.
+        const timestamp = now()
+        const keepPlans = new Set(backup.plans.map((p) => p.id))
+        const keepRuns = new Set(backup.activities.map((a) => a.id))
+        const [plans, activities, meta] = await Promise.all([
+          store.all('plans'),
+          store.all('activities'),
+          store.all('meta'),
+        ])
+        await store.replaceAll({
+          plans: backup.plans,
+          activities: backup.activities,
+          // This device's sync state survives a restore.
+          meta: [
+            ...backup.meta.filter((m) => !isLocalMeta(m.key)),
+            ...meta.filter((m) => isLocalMeta(m.key)),
+          ],
+        })
+        for (const p of plans) if (!keepPlans.has(p.id)) await enqueue(store, 'plan', p.id, timestamp, true)
+        for (const a of activities)
+          if (!keepRuns.has(a.id)) await enqueue(store, 'activity', a.id, timestamp, true)
+      })
+      await enqueueAll(store)
       return { plans: backup.plans.length, activities: backup.activities.length }
     },
   }
